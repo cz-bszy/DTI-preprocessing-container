@@ -1,0 +1,77 @@
+#Author:ZhaoChang
+#Time:2024.1.30
+#purpose:for HCP DTI Tractography
+#email:bszycz@163.com
+#if you have any problem,please feel free to contact me.
+  
+Bootstrap: docker
+From: ubuntu:18.04
+
+%environment
+    export LC_ALL=C
+    
+%setup
+cp /home/changzhao/Desktop/Singularity/freesurfer-linux-ubuntu18_amd64-7.4.1.tar.gz $SINGULARITY_ROOTFS/opt/
+cp /home/changzhao/Desktop/Singularity/runtime2014bLinux.tar.gz $SINGULARITY_ROOTFS/opt/
+
+%post
+echo "deb [trusted=yes] http://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic main restricted universe multiverse" > /etc/apt/sources.list
+echo "deb [trusted=yes] http://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic-updates main restricted universe multiverse" >> /etc/apt/sources.list
+echo "deb [trusted=yes] http://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic-backports main restricted universe multiverse" >> /etc/apt/sources.list
+
+apt-get update && apt-get install -y tzdata
+echo "Asia/Shanghai" > /etc/timezone
+DEBIAN_FRONTEND=noninteractive dpkg-reconfigure --frontend noninteractive tzdata
+
+apt-get update && apt-get install -y apt-utils && apt-get -y -V upgrade
+apt-get install -y curl gnupg apt-transport-https wget 
+
+# download and install NeuroDebian GPG key
+wget -qO - http://neuro.debian.net/_static/neuro.debian.net.asc | gpg --no-default-keyring --keyring /usr/share/keyrings/neurodebian-archive-keyring.gpg --import
+
+# add NeuroDebian source (tsinghua)
+echo "deb [signed-by=/usr/share/keyrings/neurodebian-archive-keyring.gpg] http://mirrors.tuna.tsinghua.edu.cn/neurodebian bionic main contrib non-free" > /etc/apt/sources.list.d/neurodebian.sources.list
+
+apt-get update
+
+# insatll denpendence
+apt-get -y install ants fsl afni connectome-workbench
+apt-get install -y bzip2 ca-certificates \
+  libglib2.0-0 libxext6 libsm6 libxrender1 \
+  git mercurial subversion \
+  libxt6 libxcomposite1 libfontconfig1 libasound2 \
+  gcc g++ libeigen3-dev zlib1g-dev libgl1-mesa-dev libfftw3-dev libtiff5-dev \
+  xvfb xfonts-100dpi xfonts-75dpi xfonts-cyrillic \
+  unzip imagemagick jq vim python3-pip libxt-dev libxmu-dev 
+
+tar -C /opt -xzvf $SINGULARITY_ROOTFS/opt/freesurfer-linux-ubuntu18_amd64-7.4.1.tar.gz
+chmod -R 777 /opt/freesurfer
+
+# add the freesufer to system environment
+echo 'source /opt/freesurfer/SetUpFreeSurfer.sh' >> $SINGULARITY_ENVIRONMENT
+
+# unzip Matlab Runtime
+tar -xz -C /opt/freesurfer -f $SINGULARITY_ROOTFS/opt/runtime2014bLinux.tar.gz
+chown -R root:root /opt/freesurfer/MCRv84
+chmod -R a+rx /opt/freesurfer/MCRv84
+rm -f $SINGULARITY_ROOTFS/opt/freesurfer-linux-ubuntu18_amd64-7.4.1.tar.gz
+rm -f $SINGULARITY_ROOTFS/opt/runtime2014bLinux.tar.gz
+
+
+# install mrtrix3
+apt-get -y install git g++ python python-numpy libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev libfftw3-dev libtiff5-dev
+git clone https://gitclone.com/github.com/MRtrix3/mrtrix3.git /opt/mrtrix3
+cd /opt/mrtrix3
+./configure
+./build
+./set_path
+rm -rf ./tmp
+
+# clear
+apt-get autoremove -y
+apt-get autoclean -y
+
+    
+%environment
+    export PATH="/opt/mrtrix3/bin:$PATH"
+    export FREESURFER_HOME=/opt/freesurfer
