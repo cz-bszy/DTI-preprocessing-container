@@ -33,5 +33,10 @@ Run the container using Singularity:
 - **MRtrix3:** Diffusion MRI data analysis.
 - **FreeSurfer:** Neuroimaging data analysis.
 
-
+## Notes
+pull docker container and run the container:
+   ```bash
+   docker pull zhaochang07/myubuntu:v2
+   docker run -it zhaochang07/myubuntu:v2
+```
 
