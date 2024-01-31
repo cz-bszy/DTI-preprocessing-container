@@ -11,8 +11,15 @@ From: ubuntu:18.04
     export LC_ALL=C
     
 %setup
+#mkdir /opt/HCP
 cp /home/changzhao/Desktop/Singularity/freesurfer-linux-ubuntu18_amd64-7.4.1.tar.gz $SINGULARITY_ROOTFS/opt/
 cp /home/changzhao/Desktop/Singularity/runtime2014bLinux.tar.gz $SINGULARITY_ROOTFS/opt/
+cp /home/changzhao/Desktop/Singularity/fslinstaller.py $SINGULARITY_ROOTFS/opt/
+cp /home/changzhao/Desktop/Singularity/fsl-6.0.3-centos6_64.tar.gz $SINGULARITY_ROOTFS/opt/
+cp -r /home/changzhao/Desktop/Singularity/Glasser_parcellations /opt/HCP
+cp -r /home/changzhao/Desktop/Singularity/FreeSurfer5.3 /opt/HCP
+cp -r /home/changzhao/Desktop/Singularity/HCPpipelines/HCPpipelines-4.7.0 /opt/HCP
+cp -r /home/changzhao/Desktop/Singularity/schaefer /opt/HCP
 
 %post
 echo "deb [trusted=yes] http://mirrors.tuna.tsinghua.edu.cn/ubuntu/ bionic main restricted universe multiverse" > /etc/apt/sources.list
@@ -32,10 +39,12 @@ wget -qO - http://neuro.debian.net/_static/neuro.debian.net.asc | gpg --no-defau
 # add NeuroDebian source (tsinghua)
 echo "deb [signed-by=/usr/share/keyrings/neurodebian-archive-keyring.gpg] http://mirrors.tuna.tsinghua.edu.cn/neurodebian bionic main contrib non-free" > /etc/apt/sources.list.d/neurodebian.sources.list
 
+
 apt-get update
 
 # insatll denpendence
-apt-get -y install ants fsl afni connectome-workbench
+
+apt-get -y install ants afni connectome-workbench
 apt-get install -y bzip2 ca-certificates \
   libglib2.0-0 libxext6 libsm6 libxrender1 \
   git mercurial subversion \
@@ -43,6 +52,7 @@ apt-get install -y bzip2 ca-certificates \
   gcc g++ libeigen3-dev zlib1g-dev libgl1-mesa-dev libfftw3-dev libtiff5-dev \
   xvfb xfonts-100dpi xfonts-75dpi xfonts-cyrillic \
   unzip imagemagick jq vim python3-pip libxt-dev libxmu-dev 
+
 
 tar -C /opt -xzvf $SINGULARITY_ROOTFS/opt/freesurfer-linux-ubuntu18_amd64-7.4.1.tar.gz
 chmod -R 777 /opt/freesurfer
@@ -67,11 +77,21 @@ cd /opt/mrtrix3
 ./set_path
 rm -rf ./tmp
 
+tar -C /opt -xvf $SINGULARITY_ROOTFS/opt/fsl-6.0.3-centos6_64.tar.gz
+chmod -R 777 /opt/fsl
+echo 'source /opt/fsl/etc/fslconf/fsl.sh' >> $SINGULARITY_ENVIRONMENT
+
+rm -f $SINGULARITY_ROOTFS/opt/fsl-6.0.3-centos6_64.tar.gz
+
+
 # clear
 apt-get autoremove -y
 apt-get autoclean -y
 
-    
 %environment
     export PATH="/opt/mrtrix3/bin:$PATH"
     export FREESURFER_HOME=/opt/freesurfer
+    export FSLDIR=/opt/fsl
+    export PATH=$PATH:$FSLDIR/bin
+
+    
